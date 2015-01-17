@@ -2,11 +2,25 @@ from datetime import datetime
 import hashlib
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
-from flask import current_app, request, url_for
+from flask import current_app, request, url_for, json
 from flask.ext.login import UserMixin, AnonymousUserMixin
 from app.exceptions import ValidationError
 from . import db, login_manager
 
+
+
+class JsonType(db.TypeDecorator):
+    impl = db.Unicode
+    def process_bind_param(self, value, dialect):
+        if value :
+            return unicode(json.dumps(value))
+        else:
+            return {}
+    def process_result_value(self, value, dialect):
+        if value:
+            return json.loads(value)
+        else:
+            return {}
 
 class Permission:
     FOLLOW = 0x01
@@ -48,6 +62,15 @@ class Role(db.Model):
     def __repr__(self):
         return '<Role %r>' % self.name
 
+class Recipe(db.Model):
+    __tablename__ = 'recipes'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64))
+    description = db.Column(db.Text())
+    recipe = db.Column(JsonType())
+    creator_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+
+
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
@@ -62,6 +85,7 @@ class User(UserMixin, db.Model):
     member_since = db.Column(db.DateTime(), default=datetime.utcnow)
     last_seen = db.Column(db.DateTime(), default=datetime.utcnow)
     avatar_hash = db.Column(db.String(32))
+    recipes = db.relationship('Recipe', backref='creator', lazy='dynamic')
 
     @staticmethod
     def generate_fake(count=100):
@@ -95,7 +119,7 @@ class User(UserMixin, db.Model):
         if self.email is not None and self.avatar_hash is None:
             self.avatar_hash = hashlib.md5(
                 self.email.encode('utf-8')).hexdigest()
-                
+
     @property
     def password(self):
         raise AttributeError('password is not a readable attribute')

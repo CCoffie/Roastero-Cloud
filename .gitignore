@@ -53,8 +53,3 @@ docs/_build/
 
 # PyBuilder
 target/
-
-# Local test databases
-data-dev.sqlite
-data-test.sqlite
-migrations/
