@@ -15,12 +15,12 @@ class JsonType(db.TypeDecorator):
         if value :
             return unicode(json.dumps(value))
         else:
-            return {}
+            return "{}"
     def process_result_value(self, value, dialect):
         if value:
             return json.loads(value)
         else:
-            return {}
+            return "{}"
 
 class Permission:
     FOLLOW = 0x01
@@ -60,7 +60,7 @@ class Role(db.Model):
         db.session.commit()
 
     def __repr__(self):
-        return '<Role %r>' % self.name
+        return self.name
 
 class Recipe(db.Model):
     __tablename__ = 'recipes'
@@ -69,7 +69,80 @@ class Recipe(db.Model):
     description = db.Column(db.Text())
     recipe = db.Column(JsonType())
     creator_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    bean_id = db.Column(db.Integer, db.ForeignKey('beans.id'))
 
+    def __repr__(self):
+        return self.name
+
+class Bean(db.Model):
+    __tablename__ = 'beans'
+    id = db.Column(db.Integer, primary_key=True)
+    link = db.Column(db.String(2048))
+    name = db.Column(db.String(64))
+    type = db.Column(db.String(64))
+    country_id = db.Column(db.Integer, db.ForeignKey('countries.id'))
+    reseller_id = db.Column(db.Integer, db.ForeignKey('resellers.id'))
+    recipes = db.relationship('Recipe', backref='bean', lazy='dynamic')
+
+    def __repr__(self):
+        return self.name
+
+class Country(db.Model):
+    __tablename__ = 'countries'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64))
+    beans = db.relationship('Bean', backref='country', lazy='dynamic')
+    region_id = db.Column(db.Integer, db.ForeignKey('regions.id'))
+
+    def __repr__(self):
+        return self.name
+
+    def insert_countries():
+        countries = {"Central America":["Costa Rica","Guatemala","Honduras","Mexico","Nicaragua","Panama","El Salvador"],
+                    "South America":["Bolivia","Brazil","Colombia","Ecuador","Peru"],
+                    "Africa and Arabia":["Burundi","Congo","Ethiopia","Kenya","Rwanda","Tanzania","Uganda","Yemen","Zambia","Zimbabwe"],
+                    "Indonesia and Asia":["Bali","Flores","India","Java","Myanmar","Papua New Guinea","Sumatra","Sulawesi","Timor"],
+                    "Islands and Others":["Australia","Dominican Republic","Hawaii","Jamaica","Puerto Rico","St Helena","Chicory"]}
+
+        for region, countrySet in countries.items():
+            currentRegion = Region.query.filter_by(name=region).first()
+            if currentRegion is None:
+                continue
+            else:
+                for country in countrySet:
+                    currentCountry = Country(name=country,region=currentRegion)
+                    db.session.add(currentCountry)
+        db.session.commit()
+
+class Region(db.Model):
+    __tablename__ = 'regions'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64))
+    countries = db.relationship('Country', backref='region', lazy='dynamic')
+
+    def __repr__(self):
+        return self.name
+
+    def insert_regions():
+        regions = ["Central America","South America","Africa and Arabia",
+                "Indonesia and Asia","Islands and Others"]
+        for r in regions:
+            region = Region.query.filter_by(name=r).first()
+            if region is None:
+                region = Region(name=r)
+            db.session.add(region)
+        db.session.commit()
+
+class Reseller(db.Model):
+    __tablename__ = 'resellers'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64))
+    website = db.Column(db.String(2048))
+    location = db.Column(db.String(64))
+    beans = db.relationship('Bean', backref='reseller', lazy='dynamic')
+
+    def __repr__(self):
+        return self.name
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
@@ -230,7 +303,7 @@ class User(UserMixin, db.Model):
         return User.query.get(data['id'])
 
     def __repr__(self):
-        return '<User %r>' % self.username
+        return self.username
 
 
 class AnonymousUser(AnonymousUserMixin):
