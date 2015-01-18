@@ -110,6 +110,9 @@ class Country(db.Model):
                 continue
             else:
                 for country in countrySet:
+                    currentCountry = Country.query.filter_by(name=country).first()
+                    if currentCountry is not None:
+                        continue
                     currentCountry = Country(name=country,region=currentRegion)
                     db.session.add(currentCountry)
         db.session.commit()
@@ -143,6 +146,13 @@ class Reseller(db.Model):
 
     def __repr__(self):
         return self.name
+
+    def insert_resellers():
+        resellers = [{"name": "Sweet Maria's", "website": "https://sweetmarias.com", "location": "Oakland, CA USA"},
+                    {"name": "Coffee Bean Direct", "website": "http://www.coffeebeandirect.com", "location": "Hunterdon County, NJ USA"},
+                    {"name": "Burman Coffee Traders", "website": "http://www.burmancoffee.com", "location": "Madison, WI USA"},
+                    {"name": "", "website": "", "location": ""},
+                    {"name": "", "website": "", "location": ""}]
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
