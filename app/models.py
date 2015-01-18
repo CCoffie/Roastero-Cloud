@@ -25,7 +25,7 @@ class JsonType(db.TypeDecorator):
 class Permission:
     FOLLOW = 0x01
     COMMENT = 0x02
-    WRITE_ARTICLES = 0x04
+    POST_RECIPES = 0x04
     MODERATE_COMMENTS = 0x08
     ADMINISTER = 0x80
 
@@ -43,10 +43,10 @@ class Role(db.Model):
         roles = {
             'User': (Permission.FOLLOW |
                      Permission.COMMENT |
-                     Permission.WRITE_ARTICLES, True),
+                     Permission.POST_RECIPES, True),
             'Moderator': (Permission.FOLLOW |
                           Permission.COMMENT |
-                          Permission.WRITE_ARTICLES |
+                          Permission.POST_RECIPES |
                           Permission.MODERATE_COMMENTS, False),
             'Administrator': (0xff, False)
         }
@@ -74,6 +74,47 @@ class Recipe(db.Model):
     def __repr__(self):
         return self.name
 
+    def generate_fake_recipes(count=100):
+        from sqlalchemy.exc import IntegrityError
+        import random
+        from random import seed
+        import forgery_py
+
+        seed()
+        for i in range(count):
+            r = Recipe(name=forgery_py.lorem_ipsum.word(),
+                     description=forgery_py.lorem_ipsum.sentence(),
+                     creator_id=User.query.get(random.randrange(1,User.query.all()[-1].id)).id,
+                     bean_id=Bean.query.get(random.randrange(1,Bean.query.all()[-1].id)).id)
+            db.session.add(r)
+            try:
+                db.session.commit()
+            except IntegrityError:
+                db.session.rollback()
+
+
+class Roaster(db.Model):
+    __tablename__ = 'roasters'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64))
+    fan_speed = db.Column(db.Integer)
+    heat_settings = db.Column(db.Integer)
+    connection_type = db.Column(db.String(64))
+    description = db.Column(db.String(64))
+    manufacturer = db.Column(db.String(64))
+
+    def __repr__(self):
+        return self.name
+
+    def insert_roasters():
+        roasters = [{"name": "Fresh Roast SR700", "fan_speed": "9", "heat_settings": "3", "connection_type": "USB", "description": "Hot air roaster", "manufacturer": "Fresh Roast"}]
+        for r in roasters:
+            roaster = Roaster.query.filter_by(name=r["name"]).first()
+            if roaster is not None:
+                continue
+            roaster = Roaster(name=r["name"], fan_speed=r["fan_speed"], heat_settings=r["heat_settings"], connection_type=r["connection_type"], description=r["description"], manufacturer=r["manufacturer"])
+            db.session.add(roaster)
+        db.session.commit()
 class Bean(db.Model):
     __tablename__ = 'beans'
     id = db.Column(db.Integer, primary_key=True)
@@ -86,6 +127,25 @@ class Bean(db.Model):
 
     def __repr__(self):
         return self.name
+
+    def generate_fake_beans(count=100):
+        from sqlalchemy.exc import IntegrityError
+        import random
+        from random import seed
+        import forgery_py
+
+        seed()
+        for i in range(count):
+            b = Bean(name=forgery_py.lorem_ipsum.word(),
+                     type=forgery_py.lorem_ipsum.sentence(),
+                     link=forgery_py.forgery.internet.domain_name(),
+                     country_id=Country.query.get(random.randrange(1,Country.query.all()[-1].id)).id,
+                     reseller_id=Reseller.query.get(random.randrange(1,Reseller.query.all()[-1].id)).id)
+            db.session.add(b)
+            try:
+                db.session.commit()
+            except IntegrityError:
+                db.session.rollback()
 
 class Country(db.Model):
     __tablename__ = 'countries'

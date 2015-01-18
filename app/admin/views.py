@@ -1,13 +1,11 @@
 from flask import abort
-from flask.ext.admin import BaseView, expose
+from flask.ext.admin import BaseView, expose, AdminIndexView
 from .. import admin
 from wtforms.fields import SelectField, PasswordField
 from flask.ext.login import current_user
-from ..models import Permission, User, Recipe, Bean, Reseller, Country, Region
+from ..models import Permission, User, Recipe, Bean, Reseller, Country, Region, Roaster
 from flask.ext.admin.contrib.sqla import ModelView
 from .. import db
-import inspect
-from pprint import pprint
 
 class UserView(ModelView):
     column_list = ('username', 'email', 'member_since', 'last_seen', 'role')
@@ -26,8 +24,6 @@ class UserView(ModelView):
     def _handle_view(self, name, **kwargs):
         if not self.is_accessible():
             return redirect(url_for('auth.login'))
-
-
 
 class RecipeView(ModelView):
 
@@ -99,7 +95,19 @@ class ResellerView(ModelView):
         if not self.is_accessible():
             return redirect(url_for('auth.login'))
 
-#pprint(inspect.getmembers(UserView(db.session, name="Users")))
+class RoasterView(ModelView):
+
+    def __init__(self, session):
+        # Just call parent class with predefined model.
+        super(RoasterView, self).__init__(Roaster, session, name="Roasters")
+
+    def is_accessible(self):
+        if current_user.can(Permission.ADMINISTER):
+            return True
+
+    def _handle_view(self, name, **kwargs):
+        if not self.is_accessible():
+            return redirect(url_for('auth.login'))
 
 admin.add_view(UserView(db.session))
 admin.add_view(RecipeView(db.session))
@@ -107,3 +115,4 @@ admin.add_view(BeanView(db.session))
 admin.add_view(RegionView(db.session))
 admin.add_view(CountryView(db.session))
 admin.add_view(ResellerView(db.session))
+admin.add_view(RoasterView(db.session))
