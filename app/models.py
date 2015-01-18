@@ -151,8 +151,15 @@ class Reseller(db.Model):
         resellers = [{"name": "Sweet Maria's", "website": "https://sweetmarias.com", "location": "Oakland, CA USA"},
                     {"name": "Coffee Bean Direct", "website": "http://www.coffeebeandirect.com", "location": "Hunterdon County, NJ USA"},
                     {"name": "Burman Coffee Traders", "website": "http://www.burmancoffee.com", "location": "Madison, WI USA"},
-                    {"name": "", "website": "", "location": ""},
-                    {"name": "", "website": "", "location": ""}]
+                    {"name": "Coffee Bean Corral", "website": "http://www.coffeebeancorral.com", "location": "Goodman, MS USA"},
+                    {"name": "The Coffee Project", "website": "http://coffeeproject.com", "location": "Los Angeles, CA USA"}]
+        for r in resellers:
+            reseller = Reseller.query.filter_by(name=r["name"]).first()
+            if reseller is not None:
+                continue
+            reseller = Reseller(name=r["name"], website=r["website"], location=r["location"])
+            db.session.add(reseller)
+        db.session.commit()
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
