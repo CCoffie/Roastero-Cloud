@@ -21,6 +21,7 @@ class Config:
     MAIL_SENDER = 'Roastero Cloud Admin <CalebCoffie@gmail.com>'
     ADMIN = os.environ.get('ADMIN') # Email of the admin. To set the user as admin when they register
     SLOW_DB_QUERY_TIME = 0.5
+    RECIPES_PER_PAGE = 20
 
     @staticmethod
     def init_app(app):

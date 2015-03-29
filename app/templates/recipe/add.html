@@ -8,7 +8,8 @@
   <h1>Why not add a recipe?</h1>
 </div>
 
-{{ wtf.quick_form(form=form) }}
+{{ wtf.quick_form(form=form, enctype="multipart/form-data") }}
+{{ form.csrf_token }}
 
 {% endblock %}
 

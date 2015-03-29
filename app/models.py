@@ -13,7 +13,7 @@ class JsonType(db.TypeDecorator):
     impl = db.Unicode
     def process_bind_param(self, value, dialect):
         if value :
-            return unicode(json.dumps(value))
+            return json.dumps(value)
         else:
             return "{}"
     def process_result_value(self, value, dialect):
@@ -74,6 +74,7 @@ class Recipe(db.Model):
     def __repr__(self):
         return self.name
 
+    @staticmethod
     def generate_fake_recipes(count=100):
         from sqlalchemy.exc import IntegrityError
         import random
@@ -83,14 +84,50 @@ class Recipe(db.Model):
         seed()
         for i in range(count):
             r = Recipe(name=forgery_py.lorem_ipsum.word(),
-                     description=forgery_py.lorem_ipsum.sentence(),
-                     creator_id=User.query.get(random.randrange(1,User.query.all()[-1].id)).id,
-                     bean_id=Bean.query.get(random.randrange(1,Bean.query.all()[-1].id)).id)
+                    description=forgery_py.lorem_ipsum.sentence(),
+                    creator_id=User.query.get(random.randrange(1,User.query.all()[-1].id)).id,
+                    bean_id=Bean.query.get(random.randrange(1,Bean.query.all()[-1].id)).id,
+                    recipe=Recipe.generate_fake_SR700_recipe())
             db.session.add(r)
             try:
                 db.session.commit()
             except IntegrityError:
                 db.session.rollback()
+
+    @staticmethod
+    def generate_fake_SR700_recipe():
+        import forgery_py
+        import random
+        from random import seed, randrange
+        seed()
+        recipe = {}
+        try:
+            recipe["recipeID"] = Recipe.query.get(random.randrange(1,Recipe.query.all()[-1].id)).id
+        except IndexError:
+            recipe["recipeID"] = 1
+        except ValueError:
+            recipe["recipeID"] = 1
+        recipe["roastName"] = forgery_py.lorem_ipsum.word()
+        recipe["steps"] = []
+        numSteps = randrange(4,7)
+        for x in range(0, numSteps):
+            if not (x == numSteps-1):
+                recipe["steps"].append({"fanSpeed":randrange(1,9), "sectionTime":randrange(10,50), "targetTemp": randrange(150,500)})
+            else:
+                recipe["steps"].append({"fanSpeed":randrange(1,9), "sectionTime":randrange(10,50), "cooling": True})
+        recipe["roastDescription"] = {"roastType": forgery_py.lorem_ipsum.word(), "description": forgery_py.lorem_ipsum.sentence()}
+        recipe["creator"] = User.query.get(random.randrange(1,User.query.all()[-1].id)).username
+        recipe["totalTime"] = 0
+        for s in recipe["steps"]:
+            recipe["totalTime"] = recipe["totalTime"] + s["sectionTime"]
+        recipe["bean"] = {}
+        recipe["bean"]["region"] = Region.query.get(random.randrange(1,Region.query.all()[-1].id)).name
+        recipe["bean"]["country"] = Country.query.get(random.randrange(1,Country.query.all()[-1].id)).name
+        recipe["bean"]["source"] = {}
+        recipe["bean"]["source"]["reseller"] = forgery_py.lorem_ipsum.word()
+        recipe["bean"]["source"]["link"] = forgery_py.forgery.internet.domain_name()
+        recipe["compatibleRoasters"] = ["Fresh Roast SR700"]
+        return json.dumps(recipe)
 
 
 class Roaster(db.Model):

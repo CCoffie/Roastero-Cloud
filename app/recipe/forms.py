@@ -14,5 +14,6 @@ AddRecipeFormBase = model_form(model=Recipe,
                         db_session=db.session,
                         exclude=["recipe", "bean"])
 class AddRecipeForm(AddRecipeFormBase):
-    recipe = FileField("Upload you recipe")
+    recipe = FileField("Upload you recipe", validators=[DataRequired()])
+    bean = StringField("Bean Name", [Required()])
     submit = SubmitField("Submit")
